@@ -1,0 +1,58 @@
+<!-- views/pages/auth.ejs -->
+<!doctype html>
+<html>
+
+<head>
+    <title>Google SignIn</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            padding-top: 70px;
+        }
+    </style>
+    <meta name="google-signin-scope" content="profile email">
+    <meta name="google-signin-client_id"
+        content="860697317810-9e90670qjjv1tm8m579k8hrj70vldtge.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="jumbotron text-center text-primary">
+            <h1><span class="fa fa-lock"></span> Social Authentication</h1>
+            <p>Login or Register with:</p>
+            <form id="idtokenForm" action="/auth/google" method="post">
+                <input type='hidden' id= 'idtoken' name='idtoken'/>
+            </form>
+            <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+        </div>
+        
+        <script>
+            function onSignIn(googleUser) {
+                var id_token = googleUser.getAuthResponse().id_token;
+                console.log("ID Token: " + id_token);
+
+                document.getElementById('idtoken').value = id_token;
+                
+                var action = '/auth/google' + window.location.search
+                document.getElementById('idtokenForm').action = action;
+                
+                document.getElementById("idtokenForm").submit();
+               /*  var url = new URL(window.location.href)
+                url.pathname = '/auth/google'
+                console.log(url)
+
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', url, true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    console.log('Signed in as: ' + xhr.responseText);
+                };
+                xhr.send('idtoken=' + id_token); */
+            }
+        </script>
+    </div>
+</body>
+
+</html>
