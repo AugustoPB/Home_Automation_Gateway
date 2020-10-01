@@ -1,0 +1,16 @@
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<body>
+    <form id="auth" name="auth" action="/auth" method="post">
+        <input type="hidden" name="responseurl" id='responseurl' />
+        <h1>Redirecting ...</h1>
+    </form>
+    <script>
+        var action = "/auth" + window.location.search;
+        document.getElementById("auth").action = action;
+        document.getElementById("auth").submit();
+    </script>
+</body>
+
+</html>
