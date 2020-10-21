@@ -1,0 +1,28 @@
+html, body {
+    font-family: 'Roboto', 'Helvetica', sans-serif;
+    background-color: #f5f5f5;
+}
+
+.mdl-card {
+    overflow: visible;
+}
+
+.mdl-grid {
+    max-width: 1024px;
+    margin: 50px auto;
+}
+
+.mdl-card__title {
+    padding: auto;
+    flex-direction: column;
+}
+
+.hgw_logo {
+    margin: 10 auto 10px;
+}
+
+.mdl-textfield {
+    flex-direction: column;
+    padding: auto;
+    margin: auto;
+}

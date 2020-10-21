@@ -1,11 +1,16 @@
 require('dotenv').config({ path: './config/.env' })
 const express = require('express')
+const fs = require('fs')
+const https = require('https')
+const cors = require('cors');
 const jwt = require('jsonwebtoken')
 
 const { validateClientRequestForAuth, validateClientRequestForToken, getUserFromToken, generateAuthURL } = require('./config/auth')
 
 
 const app = express()
+// use middleware
+app.use(cors());
 
 // Connect to MongoDB
 const { userDB, tokenDB } = require('./config/mongoose')
@@ -18,7 +23,7 @@ app.set('view engine', 'ejs')
 // Body Parser
 app.use(express.urlencoded({ extended: false }))
 
-// Route to authorization page
+// Route to login page
 app.get('/login', validateClientRequestForAuth, (req, res) => {
     console.log(req.query.client_id)
     res.render('login')
@@ -71,15 +76,14 @@ app.post('/auth/google', validateClientRequestForAuth, (req, res) => {
 })
 
 app.post('/token', validateClientRequestForToken, (req, res) => {
-    const { client_id, grant_type, redirect_uri, code } = req.query
+    const { client_id, grant_type, redirect_uri, code } = req.body
 
     if (grant_type == 'authorization_code') {
         jwt.verify(code, process.env.AUTHORIZATION_TOKEN_SECRET, (err, authCredentials) => {
-            if (err) return res.sendStatus(403) // change this
-
+            if (err) return res.status(400).json({error: "invalid_grant"})
             // Verify authorization credentials
-            if (authCredentials.clientId != client_id) return res.sendStatus(403) // change this
-            if (authCredentials.redirectUri != redirect_uri) return res.sendStatus(403) // change this
+            if (authCredentials.clientId != client_id) return res.status(400).json({error: "invalid_grant"})
+            if (authCredentials.redirectUri != redirect_uri) return res.status(400).json({error: "invalid_grant"})
 
             const tokenCredentials = {
                 userId: authCredentials.userId,
@@ -109,34 +113,30 @@ app.post('/token', validateClientRequestForToken, (req, res) => {
     }
     else {
         jwt.verify(code, process.env.REFRESH_TOKEN_SECRET, (err, tokenCredentials) => {
-            if (err) return res.sendStatus(403) // change this
+            if (err) return res.status(400).json({error: "invalid_grant"})
             // Verify token credentials
-            if (tokenCredentials.clientId != client_id) return res.sendStatus(403) // change this
-            // Verify if user exists
-            User.findById(tokenCredentials.userId)
-                .then(user => {
-                    if (user) {
-                        // Create access token
-                        const accessToken = jwt.sign(tokenCredentials, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-                        // Responds request with access token and refreshToken
-                        return res.json({
-                            token_type: "Bearer",
-                            access_token: accessToken,
-                            expires_in: 60 * 60 // One Hour
-                        })
-                    }
-                    else {
-                        return res.sendStatus(403) // change this
-                    }
+            if (tokenCredentials.clientId != client_id) return res.status(400).json({error: "invalid_grant"})
+            // Verify if token exists
+            RefreshToken.findOne({token: code})
+                .then(token => {
+                    if (!token) return res.status(400).json({error: "invalid_grant"})
+                    if (token.userId != tokenCredentials.userId) return res.status(400).json({error: "invalid_grant"})
+                    // Create access token
+                    const accessToken = jwt.sign(tokenCredentials, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+                    // Responds request with access token and refreshToken
+                    return res.json({
+                        token_type: "Bearer",
+                        access_token: accessToken,
+                        expires_in: 60 * 60 // One Hour
+                    })
                 })
                 .catch(err => console.log(err))
         })
     }
 })
 
-
 app.post('/fulfillment', (req, res) => {
-    console.log(req)
+    console.log(req.body)
     res.sendStatus(200)
 })
 
@@ -145,4 +145,10 @@ app.get('/error', (req, res) => res.render('error'))
 
 // Starts listening
 const port = process.env.PORT || 5000;
-app.listen(port, () => console.log('App listening on port ' + port));
+https.createServer({
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+  }, app)
+  .listen(port, function () {
+    console.log(`Example app listening on port ${port}!`)
+  })

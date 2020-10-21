@@ -14,13 +14,15 @@ module.exports = {
         return next()
     },
     validateClientRequestForToken: function (req, res, next) {
-        const {client_id, client_secret, redirect_uri, grant_type} = req.query
+        const {client_id, client_secret, grant_type} = req.body
+        console.log(req.body)
+        console.log(req.body)
 
         // Check if it is a request from an authorized client
-        if (client_id != process.env.SERVICE_CLIENT_ID) return res.redirect('/error')
-        if (client_secret != process.env.SERVICE_CLIENT_SECRET) return res.redirect('/error')
-        if (grant_type != 'authorization_code' || grant_type != 'refresh_token') return res.redirect('/error')
-        
+        if (client_id != process.env.SERVICE_CLIENT_ID) return res.status(400).json({error: "invalid_grant"})
+        if (client_secret != process.env.SERVICE_CLIENT_SECRET) return res.status(400).json({error: "invalid_grant"})
+        if (grant_type != 'authorization_code' && grant_type != 'refresh_token') return res.status(400).json({error: "invalid_grant"})
+
         return next()
     },
 
